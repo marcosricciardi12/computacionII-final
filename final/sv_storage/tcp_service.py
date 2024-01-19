@@ -6,8 +6,6 @@ import sys
 import socket
 from compress_video_celery import compress_video
 import time
-from dotenv import load_dotenv
-import os
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
     """
@@ -18,11 +16,6 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
     client.
     """
     def handle(self):
-        self.st_addr_v4 = os.getenv('SV_ST_ADDR_V4').split(', ')
-        self.st_addr_v4_ip , self.st_addr_v4_port = self.st_addr_v4[0], self.st_addr_v4[1]
-        self.st_addr_v6 = os.getenv('SV_ST_ADDR_V6').split(', ')
-        self.st_addr_v6_ip , self.st_addr_v6_port = self.st_addr_v6[0], self.st_addr_v6[1]
-
         self.data = self.request.recv(4096).strip()
         self.data = pickle.loads(self.data)
         self.data = self.data.decode()
@@ -31,20 +24,20 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
             self.task = compress_video.delay(self.data)
             while not self.task.ready():
                 time.sleep(1)
-                print("Subiendo y comprimiendo video...")
+                print("Subiendo y comprimiendo video video...")
             self.output = self.task.get()
             self.output = pickle.dumps(self.output.encode('ascii'))
             self.request.sendall(self.output)
             print(self.task.status)
         
         if self.data == 'download':
-            #Conectarse con sv storage y preguntar la lista de videos"
-            self.output = "%s\n%s\n%s\n%s\nruta/para/descargar/video" % (
-                            self.st_addr_v4_ip , self.st_addr_v4_port,
-                            self.st_addr_v6_ip , self.st_addr_v6_port)
+            print("Hay que enviar el archivo a descargar")
+            # self.file = self.request.recv(4096).strip()
+            # self.file = pickle.loads(self.file)
+            # self.file = self.file.decode()            
+            self.output = "ruta/para/descargar/video/hola"
             self.output = pickle.dumps(self.output.encode('ascii'))
             self.request.sendall(self.output)
-            print("ruta enviada al cliente")
 
         # while True:
         #     print("PID PADRE: %d" % os.getppid())
