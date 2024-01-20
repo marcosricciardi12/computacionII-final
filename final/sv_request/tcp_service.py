@@ -18,27 +18,40 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
     client.
     """
     def handle(self):
-        self.st_addr_v4 = os.getenv('SV_ST_ADDR_V4').split(', ')
+        print(self.client_address)
+        self.st_addr_v4 = os.getenv('SV_ST_ADDR_V4_LOCAL').split(', ')
         self.st_addr_v4_ip , self.st_addr_v4_port = self.st_addr_v4[0], self.st_addr_v4[1]
+        if self.st_addr_v4_ip[:8] == str(self.client_address[0][:8]):
+            print("Soy local")
         self.st_addr_v6 = os.getenv('SV_ST_ADDR_V6').split(', ')
         self.st_addr_v6_ip , self.st_addr_v6_port = self.st_addr_v6[0], self.st_addr_v6[1]
-
-        self.data = self.request.recv(4096).strip()
+        print(self.st_addr_v4_ip)
+        self.data = self.request.recv(1024).strip()
         self.data = pickle.loads(self.data)
         self.data = self.data.decode()
         print(self.data)
         if self.data == 'upload':
-            self.task = compress_video.delay(self.data)
-            while not self.task.ready():
-                time.sleep(1)
-                print("Subiendo y comprimiendo video...")
-            self.output = self.task.get()
+            # self.task = compress_video.delay(self.data)
+            # while not self.task.ready():
+            #     time.sleep(1)
+            #     print("Subiendo y comprimiendo video...")
+            # self.output = self.task.get()
+            # self.output = pickle.dumps(self.output.encode('ascii'))
+            # self.request.sendall(self.output)
+            # print(self.task.status)
+            self.output = "%s\n%s\n%s\n%s\nruta/para/descargar/video" % (
+                            self.st_addr_v4_ip , self.st_addr_v4_port,
+                            self.st_addr_v6_ip , self.st_addr_v6_port)
             self.output = pickle.dumps(self.output.encode('ascii'))
-            self.request.sendall(self.output)
-            print(self.task.status)
+            self.request.sendall(self.output) 
+            #wait file upload confirmation
+            # self.data = self.request.recv(1024).strip()
+            # self.data = pickle.loads(self.data)
+            # self.data = self.data.decode()
+            # print(self.data)           
         
         if self.data == 'download':
-            #Conectarse con sv storage y preguntar la lista de videos"
+            #
             self.output = "%s\n%s\n%s\n%s\nruta/para/descargar/video" % (
                             self.st_addr_v4_ip , self.st_addr_v4_port,
                             self.st_addr_v6_ip , self.st_addr_v6_port)
@@ -49,7 +62,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         # while True:
         #     print("PID PADRE: %d" % os.getppid())
         #     print("PID: %d" % os.getpid())
-        #     self.data = self.request.recv(4096).strip()
+        #     self.data = self.request.recv(1024).strip()
         #     print(sys.getsizeof(self.data))
         #     self.data = pickle.loads(self.data)
         #     self.process = sp.Popen(self.data, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)

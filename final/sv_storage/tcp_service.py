@@ -3,6 +3,7 @@ import signal, os
 import subprocess as sp
 import pickle
 import sys
+import hashlib
 import socket
 from compress_video_celery import compress_video
 import time
@@ -15,49 +16,89 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
     override the handle() method to implement communication to the
     client.
     """
-    def handle(self):
-        self.data = self.request.recv(4096).strip()
+    def send(self, output):
+        self.output = output
+        self.output = pickle.dumps(self.output.encode('ascii'))
+        self.request.sendall(self.output)
+
+    def receive(self):
+        self.data = self.request.recv(1024).strip()
         self.data = pickle.loads(self.data)
         self.data = self.data.decode()
-        print(self.data)
-        if self.data == 'upload':
-            self.task = compress_video.delay(self.data)
-            while not self.task.ready():
-                time.sleep(1)
-                print("Subiendo y comprimiendo video video...")
-            self.output = self.task.get()
-            self.output = pickle.dumps(self.output.encode('ascii'))
-            self.request.sendall(self.output)
-            print(self.task.status)
-        
-        if self.data == 'download':
-            print("Hay que enviar el archivo a descargar")
-            # self.file = self.request.recv(4096).strip()
-            # self.file = pickle.loads(self.file)
-            # self.file = self.file.decode()            
-            self.output = "ruta/para/descargar/video/hola"
-            self.output = pickle.dumps(self.output.encode('ascii'))
-            self.request.sendall(self.output)
+        return self.data      
 
-        # while True:
-        #     print("PID PADRE: %d" % os.getppid())
-        #     print("PID: %d" % os.getpid())
-        #     self.data = self.request.recv(4096).strip()
-        #     print(sys.getsizeof(self.data))
-        #     self.data = pickle.loads(self.data)
-        #     self.process = sp.Popen(self.data, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
-        #     self.stdout, self.stderr = self.process.communicate()
-        #     print("{} wrote:".format(self.client_address[0]))
-        #     print(self.data)
-        #     print(self.stdout)
-        #     if self.stderr == b'':
-        #         self.output = b'\nOK\n' + self.stdout
-        #         self.output = pickle.dumps(self.output)
-        #         self.request.sendall(self.output)
-        #     else:
-        #         self.output = b'\nERROR\n' + self.stderr
-        #         self.output = pickle.dumps(self.output)
-        #         self.request.sendall(self.output)
+    def handle(self):
+        #sv_storage accept connections
+        #sv_storage receive a 'download' or 'upload' from client
+
+        self.data = self.receive()
+        print(self.data)
+
+        #client could be direct user or workers processing video files
+        #if receive a upload from client
+        if self.data == 'upload':
+            #sv_storage wait file name to upload
+            self.file_name = self.receive()
+            print("File name: %s" % self.file_name)
+            hash_file = hashlib.new('md5')
+            with open("files/original/" + str(self.file_name), 'wb') as file:
+                while True:
+                    data = self.request.recv(1024)
+                    print("Recibiendo archivo...")
+                    if not data:
+                        break
+                    # data = pickle.loads(data)
+                    hash_file.update(data)
+                    file.write(data)
+            hash_file = str(hash_file.hexdigest())
+            print("hash calculado: %s" % hash_file)
+
+
+        #if receive a download from client
+        if self.data == 'download':
+            print("Hay que enviar una lista de archivos disponibles para descargar")
+            p = sp.Popen("ls files/original/", stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
+            stdout, stderr = p.communicate()
+            stdout = stdout.decode() #
+            files_list = stdout.split('\n')
+
+            #sv_storage send files list            
+            self.send(stdout)
+            #files_list sent
+
+            #receive from client index file to send
+            self.data = self.receive()
+            print(self.data)
+            self.index = int(self.data)
+            #index received from client
+
+            #sv_storage send file to download and generate hash file
+            self.hash_file = hashlib.new('md5')
+            with open("files/original/" + str(files_list[self.index]), "rb") as file:
+                self.data = file.read(1024)
+                print("Leyendo archivo: %s" % str(self.data))
+                while self.data:
+                    print("enviando archivo...")
+                    self.hash_file.update(self.data)
+                    self.output = self.data
+                    self.request.sendall(self.output)
+                    self.data = file.read(1024)
+            self.hash_file = str(self.hash_file.hexdigest())
+            print("hash md5: %s" % (self.hash_file))
+
+            #sv_storage wait and receive a 'transmission ends' or 'upload' from client
+
+            self.data = self.receive()
+            print(self.data)
+
+            #sv_storage send hash_file         
+            self.hash_file
+            print("output md5: %s" % (self.hash_file))
+            self.send(self.hash_file)
+            #hash_file sent
+
+
+
             
 
 class ForkedTCPServer(socketserver.ForkingMixIn, socketserver.TCPServer):

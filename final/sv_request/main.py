@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     load_dotenv()
     user = os.getenv('USER')
-    print("Welcome '%s' " % user)
+    print("Welcome '%s' to sv_request" % user)
     ipv4_list = os.getenv('IPV4').split(', ')
     ipv6_list = os.getenv('IPV6').split(', ')
     st_addr_v4 = os.getenv('SV_ST_ADDR_V4').split(', ')
@@ -25,8 +25,8 @@ if __name__ == "__main__":
 
     print(ipv4_list, ipv6_list)
     procesos = []
-    for addr in ipv4_list:
-        procesos.append(Process(target=service4, args = (str(addr), args.port, args.concurrency,)))
+    # for addr in ipv4_list:
+    procesos.append(Process(target=service4, args = (str('0.0.0.0'), args.port, args.concurrency,)))
     for addr in ipv6_list:
         procesos.append(Process(target=service6, args = (str(addr), args.port, args.concurrency,)))
 
