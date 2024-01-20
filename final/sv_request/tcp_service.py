@@ -18,18 +18,20 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
     client.
     """
     def handle(self):
-        print(self.client_address)
+        print("Cliente conectado: IP: %s | Internal Port: %s" % (self.client_address[0], self.client_address[1]))
         self.st_addr_v4 = os.getenv('SV_ST_ADDR_V4_LOCAL').split(', ')
         self.st_addr_v4_ip , self.st_addr_v4_port = self.st_addr_v4[0], self.st_addr_v4[1]
-        if self.st_addr_v4_ip[:8] == str(self.client_address[0][:8]):
-            print("Soy local")
+        if not self.st_addr_v4_ip[:8] == str(self.client_address[0][:8]):
+            print("No Soy local")
+            self.st_addr_v4 = os.getenv('SV_ST_ADDR_V4').split(', ')
+            self.st_addr_v4_ip , self.st_addr_v4_port = self.st_addr_v4[0], self.st_addr_v4[1]
         self.st_addr_v6 = os.getenv('SV_ST_ADDR_V6').split(', ')
         self.st_addr_v6_ip , self.st_addr_v6_port = self.st_addr_v6[0], self.st_addr_v6[1]
-        print(self.st_addr_v4_ip)
+
         self.data = self.request.recv(1024).strip()
         self.data = pickle.loads(self.data)
         self.data = self.data.decode()
-        print(self.data)
+
         if self.data == 'upload':
             # self.task = compress_video.delay(self.data)
             # while not self.task.ready():
@@ -57,7 +59,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                             self.st_addr_v6_ip , self.st_addr_v6_port)
             self.output = pickle.dumps(self.output.encode('ascii'))
             self.request.sendall(self.output)
-            print("ruta enviada al cliente")
+            print("Sv_storage address sent: %s:%s" % (self.st_addr_v4_ip, self.st_addr_v4_port))
 
         # while True:
         #     print("PID PADRE: %d" % os.getppid())

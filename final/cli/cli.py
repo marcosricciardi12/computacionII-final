@@ -5,6 +5,8 @@ import pickle
 import time
 import os
 import hashlib
+import progressbar
+import math
 
 def send(data, sock):
     data = pickle.dumps(data.encode())
@@ -31,6 +33,10 @@ def download(sock):
     sv_storage_params = receive(sock).split('\n')
     HOST_ST, PORT_ST = str(sv_storage_params[0]), int(sv_storage_params[1])
     print("host: %s:%d" % (HOST_ST, PORT_ST))
+    
+
+    if not os.path.exists("download/"):
+        os.makedirs("download/")
 
     #Client connect with sv_storage using received params from sv_request and send download action
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_st:
@@ -59,19 +65,34 @@ def download(sock):
         index = int(input("Enter the index of the file to download: "))-1
         send(str(index), sock_st)
 
+        #Client wait and receive file_size to download
+        file_size = receive(sock_st) 
+        print("File size to download: %s" % file_size)
+        file_size = int(file_size)
+        factor = 1
+        while file_size >= 1024:
+            file_size = math.ceil(file_size/1024)
+            factor = factor/1024
         #Sv_storage Send file
 
         #client receives file to download
         try:
             hash_file = hashlib.new('md5')
-            with open("download/" + str(files_list[index]), 'wb') as file:
-                while True:
-                    data = sock_st.recv(1024)
-                    if not data:
-                        break
-                    # data = pickle.loads(data)
-                    hash_file.update(data)
-                    file.write(data)
+            with progressbar.ProgressBar(max_value=file_size, prefix="Downloading file: ") as bar:
+                progress = 0
+                progress_aux= 0
+                with open("download/" + str(files_list[index]), 'wb') as file:
+                    while True:
+                        data = sock_st.recv(1024)
+                        if not data:
+                            break
+                        # data = pickle.loads(data)
+                        hash_file.update(data)
+                        file.write(data)
+                        if progress < file_size:
+                            progress = int((progress_aux)*factor)+progress
+                            progress_aux = progress_aux+1024
+                        bar.update(progress)
         except socket.timeout:
             print("Tiempo de espera terminado")
             hash_file = str(hash_file.hexdigest())
@@ -113,16 +134,38 @@ def upload(sock):
         file_name = file_path.split('/')
         file_name = str(file_name[-1])
         print("Name of file to upload: %s" % file_name)
+        #Sv_storage wait 'file_size'
+
+        #Client send file_size to sv_storage
         send(file_name, sock_st)
+
         hash_file = hashlib.new('md5')
-        with open(file_path, "rb") as file:
-            data = file.read(1024)
-            while data:
-                print("enviando archivo...")
-                hash_file.update(data)
-                output = data
-                sock_st.sendall(output)
+        file_size = os.path.getsize(file_path)
+        print(file_size)
+
+        #Sv_storage wait 'file_size'
+
+        #Client send file_size to sv_storage
+        send(str(file_size), sock_st)
+        factor = 1
+        while file_size >= 1024:
+            file_size = math.ceil(file_size/1024)
+            factor = factor/1024
+        
+        with progressbar.ProgressBar(max_value=file_size, prefix="Uploading file: ") as bar:
+            progress = 0
+            progress_aux= 0
+            with open(file_path, "rb") as file:
                 data = file.read(1024)
+                while data:
+                    hash_file.update(data)
+                    output = data
+                    sock_st.sendall(output)
+                    data = file.read(1024)
+                    if progress < file_size:
+                            progress = int((progress_aux)*factor)+progress
+                            progress_aux = progress_aux+1024
+                    bar.update(progress)
         hash_file = str(hash_file.hexdigest())
         print("hash md5: %s" % (hash_file))
 
