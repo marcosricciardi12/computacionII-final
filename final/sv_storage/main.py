@@ -10,7 +10,12 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", type=int, required=True, help="Ingrese el numero de puerto")
     parser.add_argument("-c", "--concurrency", type=str, required=True, help="Concurrencia: forking o threading")
     args = parser.parse_args()
-
+    if not os.path.exists("files/original"):
+        os.makedirs("files/original")
+    if not os.path.exists("files/medium"):
+        os.makedirs("files/medium")
+    if not os.path.exists("files/low"):
+        os.makedirs("files/low")
     load_dotenv()
     user = os.getenv('USER')
     print("Welcome '%s' to sv_storage" % user)

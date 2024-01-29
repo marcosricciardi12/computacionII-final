@@ -1,3 +1,4 @@
 python-dotenv
 redis
 celery
+progressbar2
