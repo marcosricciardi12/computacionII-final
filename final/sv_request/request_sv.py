@@ -5,7 +5,7 @@ import subprocess
 import os
 from request import request
 from dotenv import load_dotenv
-
+from compress_video_celery import compress_video
 
 load_dotenv()
 st_addr_v4 = os.getenv('SV_ST_ADDR_V4').split(', ')
@@ -145,6 +145,24 @@ def exec_action(action, body_rcv , file_rcv, msg, sock):
         
 
         return status, body, file
+    
+    if action == 'compress_file':
+        file_path = body_rcv["name"]
+        status = "Ok"
+        file = ''
+        task = compress_video.delay(file_path)
+        while not task.ready():
+            pass
+        result = task.get()
+        
+        body.update({"Task result": result})
+        print(body)
+
+        body = json.dumps(body)
+
+        return status, body, file
+
+
     
 def response(status, body, file_path, sock):
     data = (bytes([1]) + 

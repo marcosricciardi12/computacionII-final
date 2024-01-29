@@ -22,7 +22,7 @@ def download():
     # print("Respuesta recibida del servidor:\nStatus: %s\nBody: %s\nFile: %s" % (r["status"], r["body"], r["file"]))
     body = json.loads(r["body"])
     files_list = body["Files list"]
-    quality_list = ["Original", "Medium", "Low"]
+    quality_list = ["original", "medium", "low"]
     for index, file in enumerate(files_list):
         print("\t%d - %s" % (index+1, file))
 
@@ -43,7 +43,9 @@ def upload():
     file_name = file_path.split('/')
     file_name = str(file_name[-1])
     print("Name of file to upload: %s" % file_name)
-    r = (request(str(HOST), PORT, "post_file", {"name" : file_name}, file_path))
+    r = (request(str(HOST), PORT, "post_file", {"name" : file_name, "Quality": "original"}, file_path))
+    print(r)
+    r = (request(str(HOST), PORT, "compress_file", {"name" : file_name}, ''))
     print(r)
 
 

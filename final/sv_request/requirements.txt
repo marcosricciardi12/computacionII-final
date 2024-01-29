@@ -2,3 +2,5 @@ python-dotenv
 redis
 celery
 progressbar2
+moviepy
+Pillow==7.1.2

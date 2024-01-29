@@ -37,6 +37,6 @@ def compress(name, quality, host, port):
         compressed_clip.write_videofile(output_path, bitrate="500k")
         print(f"Video comprimido y guardado en {output_path}.")
         r = (request(str(host), port, "post_file", {"name" : name, "Quality": quality}, output_path))
-        os.remove(output_path)
+        
     except Exception as e:
         print(f"Error al comprimir el video: {e}")

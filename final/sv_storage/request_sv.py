@@ -73,8 +73,9 @@ def exec_action(action, body_rcv , file_rcv, msg, sock):
         return status, body, file
     
     if action == 'post_file':
+
         if (file_rcv):
-            with open("files/original/" + file_rcv, 'wb') as file:
+            with open("files/" + body_rcv["Quality"] + "/" + body_rcv["name"], 'wb') as file:
                 if msg:
                     data_ant = msg[msg.index(bytes([4]))+1:]
                 while True:
@@ -93,7 +94,7 @@ def exec_action(action, body_rcv , file_rcv, msg, sock):
                     data_ant = data
         
         
-        comando = f"openssl dgst -{'md5'} 'files/original/{file_rcv}'"
+        comando = f"openssl dgst -{'md5'} 'files/{body_rcv['Quality']}/{body_rcv['name']}'"
         
         # Ejecuta el comando y captura la salida
         resultado = subprocess.check_output(comando, shell=True)
@@ -112,9 +113,9 @@ def exec_action(action, body_rcv , file_rcv, msg, sock):
         return status, body, file
     
     if action == 'get_file':
-        quality = {"Original" : "files/original/",
-                   "Medium": "files/medium/",
-                   "Low": "files/low/"}
+        quality = {"original" : "files/original/",
+                   "medium": "files/medium/",
+                   "low": "files/low/"}
         file_path = quality[body_rcv["Quality"]] + body_rcv['name']
         status = "Ok"
         comando = f"openssl dgst -{'md5'} '{file_path}'"
