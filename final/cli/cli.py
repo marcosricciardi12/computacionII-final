@@ -69,8 +69,6 @@ if __name__ == "__main__":
         print("Elija al menos una opcion: upload o download")
         os._exit(0)
 
-    HOST, PORT = args.host, args.port
-
     if args.download:
         download()
 
