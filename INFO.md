@@ -1,1 +1,17 @@
+Sv_request: Dicho módulo es el encargado del procesamiento de cada conexión entrante en particular  en los servidores. El modo de trabajo, es como si fuera un servidor HTTP, de manera que los servidores siempre se encuentran pasivos esperando nuevas conexiones, y cada conexión es tratada de forma independiente sin tener en cuenta estados anteriores. A cada conexión se le dará una respuesta según los parámetros indicados por el cliente.
+A nivel general, el módulo recibe como parámetro el socket generado cuando el cliente se conecta, procesa los datos enviados que tienen que cumplir con una estructura determinada, y ejecutará una acción determinada según los resultados obtenidos. Finalmente envía la respuesta a la solicitud realizada por el cliente.
+
+request: En este caso, este módulo es el encargado de comunicarse con “sv_request”, de manera que con los parámetros de conexión correspondientes, establece un socket al conectarse al servidor, al cual le envía una serie de datos en un formato específico, donde puede detallar todo lo requerido por el servidor. Luego de enviar los datos, esperará una respuesta por parte del Sv_request y finalizará dicha conexión.
+
+Cliente: El objetivo del cliente es poder descargar los videos disponibles en la plataforma, así como subir un video y que este sea alojado en el servidor.
+Para dichos objetivos el cliente hace uso del módulo “request”, con el cual indicará las acciones deseadas y enviará tales peticiones al Servidor de peticiones, el cual se encargará de devolver el video solicitado, o enviar el video al servidor de almacenamiento según sea la tarea requerida.
+
+Servidor de peticiones: Haciendo uso del módulo “Sv_request”, se encarga de comunicarse con el cliente, el servidor de almacenamiento y los workers.
+En el caso de que un cliente desea subir un video, el servidor se encarga de recibir dicho video y enviarlo al servidor de alojamiento haciendo uso del módulo “request”. Una vez que el video es transferido completamente, el servidor de peticiones es informado de tal suceso y posteriormente añade la tarea de comprimir tal video en la cola de tareas implementada con Redis. Una vez comprimido el video, el Cliente recibirá como respuesta la notificación de tal actividad.
+
+Servidor de alojamiento: Haciendo uso del módulo “Sv_request”, se encarga de comunicarse con el servidor de peticiones y los workers.
+Cuando un cliente sube un video, el servidor de peticiones enviará el video a este servidor y este responderá con la confirmación de tal tarea.
+A su vez, luego de que un video es subido, y se añade la tarea a los workers, estos deberán consumir del servidor de alojamiento el video que se desea comprimir, por lo que el alojamiento responderá a una petición de los workers enviando el video solicitado. Finalmente luego de que los workers terminen de comprimir cada video, los workers enviarán el video obtenido al servidor de alojamiento, guardando el resultado final.
+
+Workers: Son los encargados de ejecutar la tarea de comprimir videos en múltiples calidades de forma distribuida. Cuando se añade una tarea a la cola, los workers consumen dicha tarea. Una vez que la tarea está en ejecución, el primer paso es recuperar el video original del servidor de almacenamiento, luego ejecutar las tareas de compresión y finalmente enviar el resultado obtenido al servidor de alojamiento. Cuando se hayan finalizado las compresiones en múltiples calidades, la tarea se dará por finalizada añadiendo el resultado obtenido al backend de redis donde se guardan dichos resultados.
 

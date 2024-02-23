@@ -1,4 +1,4 @@
-from compress_video_celery_config import app
+from compress_video_celery_config import app, ip_storage, port_storage
 import time
 from request import request
 import os
@@ -15,8 +15,8 @@ def compress_video(name):
     if not os.path.exists("files_to_send/low/"):
         os.makedirs("files_to_send/low/")
     #Storage address
-    host = "192.168.54.199"
-    port = 5005
+    host = ip_storage
+    port = int(port_storage)
     quality_list = ["medium", "low"]
     procesos = []
     r = request(str(host), port, "get_file", {"name": name, "Quality" : "original"}, '')

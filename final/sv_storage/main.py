@@ -21,12 +21,6 @@ if __name__ == "__main__":
     print("Welcome '%s' to sv_storage" % user)
     ipv4_list = os.getenv('IPV4').split(', ')
     ipv6_list = os.getenv('IPV6').split(', ')
-    st_addr_v4 = os.getenv('SV_ST_ADDR_V4').split(', ')
-    st_addr_v4_ip , st_addr_v4_port = st_addr_v4[0], st_addr_v4[1]
-    st_addr_v6 = os.getenv('SV_ST_ADDR_V6').split(', ')
-    st_addr_v6_ip , st_addr_v6_port = st_addr_v6[0], st_addr_v6[1]
-    print("Storage Adrr4: %s:%s" % (st_addr_v4_ip , st_addr_v4_port))
-    print("Storage Adrr6: %s:%s" % (st_addr_v6_ip , st_addr_v6_port))
 
     print(ipv4_list, ipv6_list)
     procesos = []

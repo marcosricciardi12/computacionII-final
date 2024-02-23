@@ -22,16 +22,40 @@ def download():
     # print("Respuesta recibida del servidor:\nStatus: %s\nBody: %s\nFile: %s" % (r["status"], r["body"], r["file"]))
     body = json.loads(r["body"])
     files_list = body["Files list"]
+    if not files_list:
+        print("No files to download! try again later!")
+        os._exit(0)
     quality_list = ["original", "medium", "low"]
     for index, file in enumerate(files_list):
         print("\t%d - %s" % (index+1, file))
 
-    index_file = int(input("Enter the index of the file to download: "))-1
+    validate = True
+    while validate:
+        try:
+            index_file = int(input("Enter the index of the file to download: "))-1
+            if index_file < 0:
+                raise ValueError
+            files_list[index_file]
+            validate = False
+        except:
+            print("No valid index, try again")
 
     for index, quality in enumerate(quality_list):
         print("\t%d - %s" % (index+1, quality))
 
-    index_quality = int(input("Enter the index of the video Quality to download: "))-1
+    validate = True
+    while validate:
+        try:
+            index_quality = int(input("Enter the index of the video Quality to download: "))-1
+            if index_quality < 0:
+                raise ValueError
+            quality_list[index_quality]
+            validate = False
+        except:
+            print("No valid index, try again")
+
+
+    
     
     r = request(str(HOST), PORT, "get_file", {"name": files_list[index_file], "Quality" : quality_list[index_quality]}, '')
     print(r)
@@ -39,7 +63,18 @@ def download():
     os.rename(r_body["name"], "download/" + r_body["name"])
 
 def upload():
-    file_path = str(input("Enter the full path of the file to upload: "))
+    validate = True
+    while validate:
+        try:
+            file_path = str(input("Enter the full path of the file to upload: "))
+            if not os.path.isfile(file_path): raise NameError
+            print(file_path[-3:])
+            if file_path[-3:] != "mp4" and file_path[-3:] != "mkv": raise NameError
+            validate = False
+        except:
+            print("Invalid path or not supported video file, try again!")
+        
+
     file_name = file_path.split('/')
     file_name = str(file_name[-1])
     print("Name of file to upload: %s" % file_name)
